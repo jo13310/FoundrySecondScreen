@@ -9,6 +9,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout code
@@ -28,10 +30,15 @@ jobs:
       run: |
         python build_exe.py
 
+    - name: Verify build
+      run: |
+        if (!(Test-Path "dist/MonitorMirror.exe")) { throw "Executable not found!" }
+
     - name: Create Release
-      id: create_release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
       with:
         files: dist/MonitorMirror.exe
+        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
