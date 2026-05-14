@@ -8,7 +8,7 @@ script_path = "monitor_mirror.py"
 PyInstaller.__main__.run([
     script_path,
     '--onefile',
-    '--console',
+    '--noconsole',
     '--name=MonitorMirror',
     '--icon=icon.ico',
     '--clean'
