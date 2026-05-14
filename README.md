@@ -1,7 +1,7 @@
 # Foundry Monitor Mirror
 
 ![Aperçu de l'application](MonitorMirror_rAW2VknqMV.png)
-![Exemple d'utilisation avec Foundry VTT](foundry_vtt_example.png)
+![Exemple d'utilisation avec Foundry VTT](foundry_vtt_exemple.jpg)
 
 [Français](#français) | [English](#english)
 
