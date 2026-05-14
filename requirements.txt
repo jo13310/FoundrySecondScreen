@@ -1,0 +1,6 @@
+mss
+PySide6
+pyautogui
+dxcam
+opencv-python
+pyinstaller
