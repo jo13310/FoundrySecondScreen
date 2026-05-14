@@ -10,5 +10,6 @@ PyInstaller.__main__.run([
     '--onefile',
     '--console',
     '--name=MonitorMirror',
+    '--icon=icon.ico',
     '--clean'
 ])

@@ -4,3 +4,4 @@ pyautogui
 dxcam
 opencv-python
 pyinstaller
+Pillow

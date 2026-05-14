@@ -13,7 +13,7 @@ os.environ["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
 os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
 from PySide6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QComboBox, QHBoxLayout
 from PySide6.QtCore import QTimer, Qt, QPoint, QRect
-from PySide6.QtGui import QImage, QPixmap, QPainter, QPainterPath, QColor
+from PySide6.QtGui import QImage, QPixmap, QPainter, QPainterPath, QColor, QIcon
 
 class VideoWidget(QWidget):
     def __init__(self):
@@ -21,6 +21,8 @@ class VideoWidget(QWidget):
         self.image = None
         self.setAttribute(Qt.WA_OpaquePaintEvent) # Optimization: don't clear background
         self.setMouseTracking(True)
+        self.cursor_pos = None # Relative to monitor
+        self.monitor_info = None
 
     def setImage(self, image):
         self.image = image
@@ -47,7 +49,28 @@ class VideoWidget(QWidget):
             x = (target_rect.width() - new_w) // 2
             y = (target_rect.height() - new_h) // 2
             
+            
             painter.drawImage(QRect(x, y, new_w, new_h), self.image)
+
+            # Draw Cursor on the SCALED image (much more efficient)
+            if self.cursor_pos and self.monitor_info:
+                painter.setRenderHint(QPainter.Antialiasing)
+                
+                # Scale cursor position to widget coordinates
+                rel_x = x + (self.cursor_pos[0] / self.monitor_info['width']) * new_w
+                rel_y = y + (self.cursor_pos[1] / self.monitor_info['height']) * new_h
+                
+                # Draw a simple arrow cursor
+                painter.setBrush(Qt.white)
+                painter.setPen(Qt.black)
+                path = QPainterPath()
+                path.moveTo(rel_x, rel_y)
+                path.lineTo(rel_x, rel_y + 15)
+                path.lineTo(rel_x + 5, rel_y + 10)
+                path.lineTo(rel_x + 10, rel_y + 15)
+                path.closeSubpath()
+                painter.drawPath(path)
+            
             painter.end()
 
 # Disable pyautogui's fail-safe to prevent it from crashing if the mouse hits a corner
@@ -61,6 +84,8 @@ class MonitorMirror(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Monitor Mirror")
+        if os.path.exists("icon.ico"):
+            self.setWindowIcon(QIcon("icon.ico"))
         logger.info("Initializing Monitor Mirror...")
         
         self.sct = mss.mss()
@@ -177,30 +202,14 @@ class MonitorMirror(QMainWindow):
             img = QImage(sct_img.rgb, sct_img.size[0], sct_img.size[1], QImage.Format_RGB888)
             current_mode = "MSS (Fallback)"
 
-        # Draw Cursor on the HIGH-RES image before displaying
-        # This keeps the cursor crisp even if the window is small
+        # Pass cursor info to widget for efficient drawing
         cursor_x, cursor_y = pyautogui.position()
         if (monitor['left'] <= cursor_x < monitor['left'] + monitor['width'] and
             monitor['top'] <= cursor_y < monitor['top'] + monitor['height']):
-            
-            painter = QPainter(img)
-            painter.setRenderHint(QPainter.Antialiasing)
-            
-            # Relative coordinates
-            rel_x = cursor_x - monitor['left']
-            rel_y = cursor_y - monitor['top']
-            
-            # Draw a simple arrow cursor
-            painter.setBrush(Qt.white)
-            painter.setPen(Qt.black)
-            path = QPainterPath()
-            path.moveTo(rel_x, rel_y)
-            path.lineTo(rel_x, rel_y + 15)
-            path.lineTo(rel_x + 5, rel_y + 10)
-            path.lineTo(rel_x + 10, rel_y + 15)
-            path.closeSubpath()
-            painter.drawPath(path)
-            painter.end()
+            self.display_widget.cursor_pos = (cursor_x - monitor['left'], cursor_y - monitor['top'])
+            self.display_widget.monitor_info = monitor
+        else:
+            self.display_widget.cursor_pos = None
 
         # Update Display
         self.display_widget.setImage(img)
